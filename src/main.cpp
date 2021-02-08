@@ -170,41 +170,50 @@ int main(int, char**)
 
         if (showGameOfLifeWindow)
         {
+            static double refreshTime = 0.0;
             ImGui::SetNextWindowSize(ImVec2(1500, 900));
             ImGui::Begin("Game Of Life Window", &showGameOfLifeWindow, ImGuiWindowFlags_AlwaysAutoResize & ImGuiWindowFlags_HorizontalScrollbar);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
             if (ImGui::Button("Start simulation"))
+            {
                 runSimulation = true;
+            }
             if (ImGui::Button("Stop simulation"))
+            {
                 runSimulation = false;
+                refreshTime = 0.0;
+            }
 
             ImGui::NewLine();
             if (ImGui::Button("Next iteration"))
                 doNextIteration = true;
         
-            static int refreshRate = 1;
+            static int refreshRate = 2;
             ImGui::PushItemWidth(100);
             ImGui::InputInt("Refreshes per second", &refreshRate);
             ImGui::PopItemWidth();
 
-            auto boardSize = gol.BoardSize();
-            static double refreshTime = 0.0;
-            if (refreshTime == 0.0)
+            if (!runSimulation)
             {
-                refreshTime = ImGui::GetTime();
-            }
-            while (refreshTime < ImGui::GetTime())
-            {
-                if (runSimulation)
-                {
-                    gol.DoStateChanges(gol.GenNextStateChanges());
-                }
-                else if (doNextIteration)
+                if (doNextIteration)
                 {
                     gol.DoStateChanges(gol.GenNextStateChanges());
                     doNextIteration = false;
                 }
-                refreshTime += 1. / float(refreshRate);
             }
+            else
+            {
+                if (refreshTime == 0.0)
+                {
+                    refreshTime = ImGui::GetTime();
+                }
+                while (refreshTime < ImGui::GetTime())
+                {
+                    gol.DoStateChanges(gol.GenNextStateChanges());
+                    refreshTime += 1. / float(refreshRate);
+                }
+            }
+
+            auto boardSize = gol.BoardSize();
             for (int y = 0; y < boardSize; y++)
                 for (int x = 0; x < boardSize; x++)
                 {
