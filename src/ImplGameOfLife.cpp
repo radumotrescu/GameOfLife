@@ -101,3 +101,8 @@ void GameOfLife::PrintBoardState()
     }
     std::cout << "------------------------------------------\n";
 }
+
+void GameOfLife::ToggleCellState(const std::pair<int, int>& cell)
+{
+    m_board[cell.first][cell.second] = !m_board[cell.first][cell.second];
+}

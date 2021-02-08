@@ -25,6 +25,8 @@ public:
         return m_board[index];
     }
 
+    void ToggleCellState(const std::pair<int, int>& cell);
+
     void PrintBoardState();
 
 private:
