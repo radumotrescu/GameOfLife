@@ -43,11 +43,51 @@ void GameOfLife::SetInitialState(const std::vector<std::pair<int, int>>& aliveCe
     }
 }
 
-std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges()
+std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges() const
 {
     auto cellChanges = std::vector<std::pair<int, int>>();
 
     for (int i = 0; i < m_boardSize; i++)
+    {
+        for (int j = 0; j < m_boardSize; j++)
+        {
+            auto nrAliveNeighbors = 0;
+            auto nrDeadNeighbors = 0;
+            for (const auto& [offX, offY] : Offsets)
+            {
+                if (!CoordsInBoardSize(m_boardSize, i + offX, j + offY))
+                    continue;
+
+                if (m_board[i + offX][j + offY])
+                    nrAliveNeighbors++;
+                else
+                    nrDeadNeighbors++;
+            }
+            if (m_board[i][j]) // cell is alive
+            {
+                if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
+                    cellChanges.emplace_back(i, j);
+                else if (nrAliveNeighbors >= 4) // if 4 or more alive neighbors, the cell dies by overpopulation
+                    cellChanges.emplace_back(i, j);
+            }
+            else                // cell is dead
+            {
+                if (nrAliveNeighbors == 3)
+                    cellChanges.emplace_back(i, j);
+            }
+        }
+    }
+
+    return cellChanges;
+}
+
+std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges(int comps, int compIdx) 
+{
+    auto cellChanges = std::vector<std::pair<int, int>>();
+
+    auto compSize = m_boardSize / comps;
+
+    for (int i = compIdx * compSize; i < (compIdx + 1) * compSize; i++)
     {
         for (int j = 0; j < m_boardSize; j++)
         {

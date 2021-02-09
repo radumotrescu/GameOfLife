@@ -11,6 +11,9 @@
 #include <SDL.h>
 
 #include <ImplGameOfLife.h>
+#include <Semaphore.h>
+#include <thread>
+#include <vector>
 
 // About Desktop OpenGL function loaders:
 //  Modern desktop OpenGL doesn't have a standard portable header file to load OpenGL function pointers.
@@ -19,6 +22,52 @@
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
 #include <GL/gl3w.h>            // Initialize with gl3wInit()
 #endif
+
+static Semaphore mutex(1);
+static Semaphore t1(0);
+static Semaphore t2(1);
+static int count = 0;
+static int n = 2;
+
+void barrier(GameOfLife& gol, int nComps, int compIdx)
+{
+    auto stateChange = gol.GenNextStateChanges(nComps, compIdx);
+    mutex.wait();
+    count++;
+
+    if (count == n)
+    {
+        t2.wait();
+        t1.notify();
+    }
+    mutex.notify();
+
+    t1.wait();
+    t1.notify();
+
+    gol.DoStateChanges(stateChange);
+
+    mutex.wait();
+    count--;
+
+    if (count == 0)
+    {
+        t1.wait();
+        t2.notify();
+    }
+    mutex.notify();
+    t2.wait();
+    t2.notify();
+}
+
+void cellSwap(GameOfLife& gol, int y, int x)
+{
+    mutex.wait();
+
+    gol.ToggleCellState({ x, y });
+
+    mutex.notify();
+}
 
 // Main code
 int main(int, char**)
@@ -99,24 +148,17 @@ int main(int, char**)
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 
-    // --- Game of Life testing
-    auto gol = GameOfLife(30);
-    //gol.SetInitialState({
-    //    {0, 0},
-    //    {0, 1},
-    //    {1, 0},
-    //    });
+    auto gol = GameOfLife(50);
     gol.SetInitialState({
         {1, 1},
         {2, 1},
         {3, 1},
+        {31, 30},
+        {31, 31},
+        {31, 32},
         });
-    //for (auto i = 0; i < 4; i++)
-    //{
-    //    gol.PrintBoardState();
-    //    gol.DoStateChanges(gol.GenNextStateChanges());
-    //}
-    // ---
+
+    auto threadVec = std::vector<std::thread>();
 
     // Main loop
     bool done = false;
@@ -196,7 +238,8 @@ int main(int, char**)
             {
                 if (doNextIteration)
                 {
-                    gol.DoStateChanges(gol.GenNextStateChanges());
+                    //auto thread = std::thread(barrier, std::ref(gol));
+                    //thread.join();
                     doNextIteration = false;
                 }
             }
@@ -208,7 +251,17 @@ int main(int, char**)
                 }
                 while (refreshTime < ImGui::GetTime())
                 {
-                    gol.DoStateChanges(gol.GenNextStateChanges());
+                    for (int i = 0; i < n; i++)
+                    {
+                        threadVec.push_back(std::thread(barrier, std::ref(gol), n, i));
+                    }
+
+                    //ImGui::Text("Num threads: %d", count);
+                    for (auto& thread: threadVec)
+                    {
+                        thread.join();
+                    }
+                    threadVec.clear();
                     refreshTime += 1. / float(refreshRate);
                 }
             }
@@ -222,9 +275,11 @@ int main(int, char**)
                     ImGui::PushID(y * boardSize + x);
                     ImGui::PushStyleColor(ImGuiCol_Header, IM_COL32(255, 0, 0, 255));
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
-                    if (ImGui::Selectable(".", gol[y][x], 0, ImVec2(20, 20)))
+                    if (ImGui::Selectable(".", gol[y][x], 0, ImVec2(10, 10)))
                     {
-                        gol.ToggleCellState({ y, x });
+                        auto swap = std::thread(cellSwap, std::ref(gol), x, y);
+                        swap.join();
+
                     }
                     ImGui::PopStyleColor();
                     ImGui::PopStyleVar();
