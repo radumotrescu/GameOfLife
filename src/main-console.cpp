@@ -18,39 +18,45 @@ static int n = 2;
 
 void barrier(GameOfLife& gol, int nComps, int compIdx)
 {
-    auto stateChange = gol.GenNextStateChanges(nComps, compIdx);
-    mutex.wait();
-    count++;
-
-    if (count == n)
+    for (auto generation = 0; generation < 2; generation++)
     {
-        t2.wait();
-        t1.notify();
-    }
-    mutex.notify();
+        auto stateChange = gol.GenNextStateChanges(nComps, compIdx);
+        mutex.wait();
+        count++;
 
-    t1.wait();
-    t1.notify();
+        if (count == n)
+        {
+            t2.wait();
+            t1.notify();
+        }
+        mutex.notify();
 
-    gol.DoStateChanges(stateChange);
-
-    mutex.wait();
-    count--;
-
-    if (count == 0)
-    {
         t1.wait();
+        t1.notify();
+
+        gol.DoStateChanges(stateChange);
+
+        mutex.wait();
+        count--;
+
+        if (count == 0)
+        {
+            t1.wait();
+            t2.notify();
+        }
+        mutex.notify();
+        t2.wait();
         t2.notify();
     }
-    mutex.notify();
-    t2.wait();
-    t2.notify();
 }
 
 void workThread(GameOfLife& gol, int nComps, int compIdx)
 {
-    auto stateChange = gol.GenNextStateChanges(nComps, compIdx);
-    gol.DoStateChanges(stateChange);
+    for (auto generation = 0; generation < 2; generation++)
+    {
+        auto stateChange = gol.GenNextStateChanges(nComps, compIdx);
+        gol.DoStateChanges(stateChange);
+    }
 }
 
 void cellSwap(GameOfLife& gol, int y, int x)
@@ -100,7 +106,8 @@ int main()
     gol.SetInitialState(initialBoard);
 
     TestUtils::Timer timer;
-    gol.DoStateChanges(gol.GenNextStateChanges());
+    for (int generation = 0; generation < 2; generation++)
+        gol.DoStateChanges(gol.GenNextStateChanges());
     auto elapsed = timer.Elapsed();
     std::cout << "main thread time: " << elapsed << " milliseconds";
 
@@ -113,7 +120,7 @@ int main()
     auto vecThread = std::vector<std::thread>();
     for (int i = 0; i < 2; i++)
     {
-        vecThread.emplace_back(workThread, std::ref(gol), 2, i);
+        vecThread.emplace_back(barrier, std::ref(gol), 2, i);
     }
     for (int i = 0; i < 2; i++)
     {
