@@ -55,6 +55,11 @@ void GameOfLife::SetInitialState(std::vector<std::vector<bool>>&& aliveCellsAtSt
         m_board = aliveCellsAtStart;
 }
 
+std::vector<std::vector<bool>> GameOfLife::GetState()
+{
+    return m_board;
+}
+
 std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges() const
 {
     auto cellChanges = std::vector<std::pair<int, int>>();

@@ -47,6 +47,12 @@ void barrier(GameOfLife& gol, int nComps, int compIdx)
     t2.notify();
 }
 
+void workThread(GameOfLife& gol, int nComps, int compIdx)
+{
+    auto stateChange = gol.GenNextStateChanges(nComps, compIdx);
+    gol.DoStateChanges(stateChange);
+}
+
 void cellSwap(GameOfLife& gol, int y, int x)
 {
     mutex.wait();
@@ -96,8 +102,32 @@ int main()
     TestUtils::Timer timer;
     gol.DoStateChanges(gol.GenNextStateChanges());
     auto elapsed = timer.Elapsed();
+    std::cout << "main thread time: " << elapsed << " milliseconds";
 
-    std::cout << elapsed << " milliseconds";
+    auto noThreadStage = gol.GetState();
+
+    std::cout << "\n";
+    gol.SetInitialState(initialBoard);
+
+    timer.Reset();
+    auto vecThread = std::vector<std::thread>();
+    for (int i = 0; i < 2; i++)
+    {
+        vecThread.emplace_back(workThread, std::ref(gol), 2, i);
+    }
+    for (int i = 0; i < 2; i++)
+    {
+        vecThread[i].join();
+    }
+    elapsed = timer.Elapsed();
+    std::cout << "two thread time: " << elapsed << " milliseconds";
+
+    std::cout << "\n";
+    auto twoThreadState = gol.GetState();
+    if (twoThreadState == noThreadStage)
+        std::cout << "states are equal";
+    else
+        std::cout << "states are not equal";
 
     return 0;
 }

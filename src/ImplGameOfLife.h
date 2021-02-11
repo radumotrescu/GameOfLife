@@ -17,6 +17,8 @@ public:
     void SetInitialState(const std::vector<std::vector<bool>>& aliveCellsAtStart);
     void SetInitialState(std::vector<std::vector<bool>>&& aliveCellsAtStart);
 
+    std::vector<std::vector<bool>> GetState();
+
     std::vector<std::pair<int, int>> GenNextStateChanges() const;
     std::vector<std::pair<int, int>> GenNextStateChanges(int compSize, int nrComp) ;
     void DoStateChanges(const std::vector<std::pair<int, int>>& cellChanges);
