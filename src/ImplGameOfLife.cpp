@@ -43,6 +43,18 @@ void GameOfLife::SetInitialState(const std::vector<std::pair<int, int>>& aliveCe
     }
 }
 
+void GameOfLife::SetInitialState(const std::vector<std::vector<bool>>& aliveCellsAtStart)
+{
+    if(m_board.size() == aliveCellsAtStart.size() && m_board.front().size() == aliveCellsAtStart.front().size())
+        m_board = aliveCellsAtStart;
+}
+
+void GameOfLife::SetInitialState(std::vector<std::vector<bool>>&& aliveCellsAtStart)
+{
+    if(m_board.size() == aliveCellsAtStart.size() && m_board.front().size() == aliveCellsAtStart.front().size())
+        m_board = aliveCellsAtStart;
+}
+
 std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges() const
 {
     auto cellChanges = std::vector<std::pair<int, int>>();
