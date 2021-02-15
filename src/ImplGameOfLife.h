@@ -2,6 +2,8 @@
 
 #include <vector>
 
+using StateChange = std::pair<int, int>;
+using StateChanges = std::vector<StateChange>;
 class GameOfLife
 {
 public:
@@ -21,6 +23,8 @@ public:
 
     std::vector<std::pair<int, int>> GenNextStateChanges() const;
     std::vector<std::pair<int, int>> GenNextStateChanges(int compSize, int nrComp) ;
+    std::vector<std::pair<int, int>> GenNextStateChangesForRow(int row);
+
     void DoStateChanges(const std::vector<std::pair<int, int>>& cellChanges);
 
     int BoardSize() const

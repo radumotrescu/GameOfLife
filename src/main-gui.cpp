@@ -11,7 +11,7 @@
 #include <SDL.h>
 
 #include <ImplGameOfLife.h>
-#include <Semaphore.h>
+#include <ThreadUtils.h>
 #include <thread>
 #include <vector>
 

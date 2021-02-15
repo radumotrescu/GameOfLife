@@ -45,13 +45,13 @@ void GameOfLife::SetInitialState(const std::vector<std::pair<int, int>>& aliveCe
 
 void GameOfLife::SetInitialState(const std::vector<std::vector<bool>>& aliveCellsAtStart)
 {
-    if(m_board.size() == aliveCellsAtStart.size() && m_board.front().size() == aliveCellsAtStart.front().size())
+    if (m_board.size() == aliveCellsAtStart.size() && m_board.front().size() == aliveCellsAtStart.front().size())
         m_board = aliveCellsAtStart;
 }
 
 void GameOfLife::SetInitialState(std::vector<std::vector<bool>>&& aliveCellsAtStart)
 {
-    if(m_board.size() == aliveCellsAtStart.size() && m_board.front().size() == aliveCellsAtStart.front().size())
+    if (m_board.size() == aliveCellsAtStart.size() && m_board.front().size() == aliveCellsAtStart.front().size())
         m_board = aliveCellsAtStart;
 }
 
@@ -98,7 +98,7 @@ std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges() const
     return cellChanges;
 }
 
-std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges(int comps, int compIdx) 
+std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges(int comps, int compIdx)
 {
     auto cellChanges = std::vector<std::pair<int, int>>();
 
@@ -137,6 +137,42 @@ std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges(int comps, int 
 
     return cellChanges;
 }
+
+std::vector<std::pair<int, int>> GameOfLife::GenNextStateChangesForRow(int row)
+{
+    auto cellChanges = std::vector<std::pair<int, int>>();
+
+    for (int j = 0; j < m_boardSize; j++)
+    {
+        auto nrAliveNeighbors = 0;
+        auto nrDeadNeighbors = 0;
+        for (const auto& [offX, offY] : Offsets)
+        {
+            if (!CoordsInBoardSize(m_boardSize, row + offX, j + offY))
+                continue;
+
+            if (m_board[row + offX][j + offY])
+                nrAliveNeighbors++;
+            else
+                nrDeadNeighbors++;
+        }
+        if (m_board[row][j]) // cell is alive
+        {
+            if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
+                cellChanges.emplace_back(row, j);
+            else if (nrAliveNeighbors >= 4) // if 4 or more alive neighbors, the cell dies by overpopulation
+                cellChanges.emplace_back(row, j);
+        }
+        else                // cell is dead
+        {
+            if (nrAliveNeighbors == 3)
+                cellChanges.emplace_back(row, j);
+        }
+    }
+
+    return cellChanges;
+}
+
 
 void GameOfLife::DoStateChanges(const std::vector<std::pair<int, int>>& cellChanges)
 {
