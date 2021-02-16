@@ -55,14 +55,14 @@ void GameOfLife::SetInitialState(std::vector<std::vector<bool>>&& aliveCellsAtSt
         m_board = aliveCellsAtStart;
 }
 
-std::vector<std::vector<bool>> GameOfLife::GetState()
+State GameOfLife::GetState()
 {
     return m_board;
 }
 
-std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges() const
+StateChanges GameOfLife::GenNextStateChanges() const
 {
-    auto cellChanges = std::vector<std::pair<int, int>>();
+    auto cellChanges = StateChanges();
 
     for (int i = 0; i < m_boardSize; i++)
     {
@@ -98,11 +98,25 @@ std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges() const
     return cellChanges;
 }
 
-std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges(int comps, int compIdx)
+namespace
 {
-    auto cellChanges = std::vector<std::pair<int, int>>();
+    bool isPowerOfTwo(int n)
+    {
+        return n > 0 && !(n & (n-1));
+    }
+}
+
+StateChanges GameOfLife::GenNextStateChanges(int comps, int compIdx)
+{
+    if (!isPowerOfTwo(comps))
+        return {};
+
+    auto cellChanges = StateChanges();
 
     auto compSize = m_boardSize / comps;
+
+    auto rowSize = comps / 2;
+    auto colSize = rowSize / 2;
 
     for (int i = compIdx * compSize; i < (compIdx + 1) * compSize; i++)
     {
@@ -138,9 +152,9 @@ std::vector<std::pair<int, int>> GameOfLife::GenNextStateChanges(int comps, int 
     return cellChanges;
 }
 
-std::vector<std::pair<int, int>> GameOfLife::GenNextStateChangesForRow(int row)
+StateChanges GameOfLife::GenNextStateChangesForRow(int row)
 {
-    auto cellChanges = std::vector<std::pair<int, int>>();
+    auto cellChanges = StateChanges();
 
     for (int j = 0; j < m_boardSize; j++)
     {

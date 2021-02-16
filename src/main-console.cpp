@@ -15,7 +15,7 @@ static Semaphore t2(2);
 static int count = 0;
 static int n = 2;
 
-static auto boardSize = 5000;
+static auto boardSize = 1000;
 
 static Barrier BarrierHalf(2);
 
@@ -24,7 +24,7 @@ void barierHalf(GameOfLife& gol, int nComps, int compIdx)
     for (auto generation = 0; generation < 2; generation++)
     {
         auto stateChange = gol.GenNextStateChanges(nComps, compIdx);
-        
+
         BarrierHalf.phase1();
         gol.DoStateChanges(stateChange);
         BarrierHalf.phase2();
@@ -44,16 +44,7 @@ void barierRow(GameOfLife& gol, int row)
     }
 }
 
-void cellSwap(GameOfLife& gol, int y, int x)
-{
-    mutex.wait();
-
-    gol.ToggleCellState({ x, y });
-
-    mutex.notify();
-}
-
-int main()
+std::vector<std::vector<bool>> InitialBoard()
 {
     unsigned seed = 5;
     std::default_random_engine generator(seed);
@@ -69,31 +60,26 @@ int main()
         for (int j = 0; j < boardSize; ++j)
             initialBoard[i][j] = static_cast<bool>(distribution(generator));
     }
+    return initialBoard;
+}
 
-    auto elapsed = 0ll;
-    auto gol = GameOfLife(boardSize);
-    //gol.SetInitialState({
-    //    {1, 1},
-    //    {2, 1},
-    //    {3, 1},
-    //    {31, 30},
-    //    {31, 31},
-    //    {31, 32},
-    //    });
+State GenericImplementation(GameOfLife& gol)
+{
+    gol.SetInitialState(InitialBoard());
+    TestUtils::Timer timer;
+    for (int generation = 0; generation < 2; generation++)
+        gol.DoStateChanges(gol.GenNextStateChanges());
+    auto elapsed = timer.Elapsed();
+    std::cout << "main thread time, generic implementation: " << elapsed << " milliseconds\n";
+    return gol.GetState();
+}
 
-    gol.SetInitialState(initialBoard);
+State MainThreadOneRow(GameOfLife& gol)
+{
+    gol.SetInitialState(InitialBoard());
 
     TestUtils::Timer timer;
-    //for (int generation = 0; generation < 2; generation++)
-    //    gol.DoStateChanges(gol.GenNextStateChanges());
-    //auto elapsed = timer.Elapsed();
-    //std::cout << "main thread time: " << elapsed << " milliseconds";
-
-    //auto noThreadStage = gol.GetState();
-
-    //std::cout << "\n";
-
-    //gol.PrintBoardState();
+    timer.Reset();
     auto stateChanges = std::vector<StateChanges>();
     for (int generation = 0; generation < 2; generation++)
     {
@@ -107,42 +93,36 @@ int main()
 
         stateChanges.clear();
     }
-    elapsed = timer.Elapsed();
-    std::cout << "main thread time: " << elapsed << " milliseconds\n";
+    auto elapsed = timer.Elapsed();
+    std::cout << "main thread time, one row at a time: " << elapsed << " milliseconds\n";
+    return gol.GetState();
+}
 
-    auto noThreadStage = gol.GetState();
-    //gol.PrintBoardState();
-
-    std::cout << "\n";
-
-    gol.SetInitialState(initialBoard);
-
-    timer.Reset();
+State TwoThreads(GameOfLife& gol)
+{
+    gol.SetInitialState(InitialBoard());
+    TestUtils::Timer timer;
+    auto vecThread = std::vector<std::thread>();
+    for (int i = 0; i < 2; i++)
     {
-        auto vecThread = std::vector<std::thread>();
-        for (int i = 0; i < 2; i++)
-        {
-            vecThread.emplace_back(barierHalf, std::ref(gol), 2, i);
-        }
-        for (int i = 0; i < 2; i++)
-        {
-            vecThread[i].join();
-        }
-        elapsed = timer.Elapsed();
-        std::cout << "two thread time: " << elapsed << " milliseconds";
+        vecThread.emplace_back(barierHalf, std::ref(gol), 2, i);
     }
+    for (int i = 0; i < 2; i++)
+    {
+        vecThread[i].join();
+    }
+    auto elapsed = timer.Elapsed();
+    std::cout << "two thread time: " << elapsed << " milliseconds\n";
 
-    auto twoThreadState = gol.GetState();
-    std::cout << "\n";
-    if (twoThreadState == noThreadStage)
-        std::cout << "states are equal";
-    else
-        std::cout << "states are not equal";
+    return gol.GetState();
+}
 
-    std::cout << "\n";
-    gol.SetInitialState(initialBoard);
+State OneThreadOneRow(GameOfLife& gol)
+{
+    gol.SetInitialState(InitialBoard());
     auto vecThread = std::vector<std::thread>();
 
+    TestUtils::Timer timer;
     timer.Reset();
     for (int i = 0; i < boardSize; i++)
     {
@@ -152,19 +132,31 @@ int main()
     {
         vecThread[i].join();
     }
-    elapsed = timer.Elapsed();
-    std::cout << "one thread per row time: " << elapsed << " milliseconds";
+    auto elapsed = timer.Elapsed();
+    std::cout << "one thread per row time: " << elapsed << " milliseconds\n";
+    return gol.GetState();
+}
 
-    std::cout << "\n";
-    auto rowThreadState = gol.GetState();
-    if (rowThreadState == noThreadStage)
-        std::cout << "states are equal";
+int main()
+{
+    auto gol = GameOfLife(boardSize);
+
+    auto genericImplementationState = GenericImplementation(gol);
+    auto oneRowState = MainThreadOneRow(gol);
+
+    auto twoThreadState = TwoThreads(gol);
+
+    if (twoThreadState == genericImplementationState)
+        std::cout << "states are equal\n";
     else
-        std::cout << "states are not equal";
+        std::cout << "states are not equal\n";
 
-    std::cout << "\n";
-    //gol.PrintBoardState();
+    auto rowThreadState = OneThreadOneRow(gol);
 
+    if (rowThreadState == genericImplementationState)
+        std::cout << "states are equal\n";
+    else
+        std::cout << "states are not equal\n";
 
     return 0;
 }

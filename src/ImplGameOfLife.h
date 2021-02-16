@@ -4,6 +4,8 @@
 
 using StateChange = std::pair<int, int>;
 using StateChanges = std::vector<StateChange>;
+using State = std::vector<std::vector<bool>>;
+
 class GameOfLife
 {
 public:
@@ -19,11 +21,11 @@ public:
     void SetInitialState(const std::vector<std::vector<bool>>& aliveCellsAtStart);
     void SetInitialState(std::vector<std::vector<bool>>&& aliveCellsAtStart);
 
-    std::vector<std::vector<bool>> GetState();
+    State GetState();
 
-    std::vector<std::pair<int, int>> GenNextStateChanges() const;
-    std::vector<std::pair<int, int>> GenNextStateChanges(int compSize, int nrComp) ;
-    std::vector<std::pair<int, int>> GenNextStateChangesForRow(int row);
+    StateChanges GenNextStateChanges() const;
+    StateChanges GenNextStateChanges(int compSize, int nrComp) ;
+    StateChanges GenNextStateChangesForRow(int row);
 
     void DoStateChanges(const std::vector<std::pair<int, int>>& cellChanges);
 
@@ -42,5 +44,5 @@ public:
 
 private:
     const int m_boardSize;
-    mutable std::vector<std::vector<bool>> m_board;
+    mutable State m_board;
 };
