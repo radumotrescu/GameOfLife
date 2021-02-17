@@ -24,7 +24,9 @@ public:
     State GetState();
 
     StateChanges GenNextStateChanges() const;
-    StateChanges GenNextStateChanges(int compSize, int nrComp) ;
+
+    template<int compSize>
+    StateChanges GenNextStateChanges(int nrComp);
     StateChanges GenNextStateChangesForRow(int row);
 
     void DoStateChanges(const std::vector<std::pair<int, int>>& cellChanges);
@@ -46,3 +48,9 @@ private:
     const int m_boardSize;
     mutable State m_board;
 };
+
+template<>
+StateChanges GameOfLife::GenNextStateChanges<2>(int compIdx);
+
+template<>
+StateChanges GameOfLife::GenNextStateChanges<4>(int compIdx);

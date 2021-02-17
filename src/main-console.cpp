@@ -15,27 +15,14 @@ static Semaphore t2(2);
 static int count = 0;
 static int n = 2;
 
-static auto boardSize = 1000;
-
-static Barrier BarrierHalf(2);
-
-void barierHalf(GameOfLife& gol, int nComps, int compIdx)
-{
-    for (auto generation = 0; generation < 2; generation++)
-    {
-        auto stateChange = gol.GenNextStateChanges(nComps, compIdx);
-
-        BarrierHalf.phase1();
-        gol.DoStateChanges(stateChange);
-        BarrierHalf.phase2();
-    }
-}
+static auto boardSize = 30000;
+static auto numGenerations = 1;
 
 static Barrier barrier(boardSize);
 
-void barierRow(GameOfLife& gol, int row)
+void barrierRow(GameOfLife& gol, int row)
 {
-    for (auto generation = 0; generation < 2; generation++)
+    for (auto generation = 0; generation < numGenerations; generation++)
     {
         auto stateChange = gol.GenNextStateChangesForRow(row);
         barrier.phase1();
@@ -67,7 +54,7 @@ State GenericImplementation(GameOfLife& gol)
 {
     gol.SetInitialState(InitialBoard());
     TestUtils::Timer timer;
-    for (int generation = 0; generation < 2; generation++)
+    for (int generation = 0; generation < numGenerations; generation++)
         gol.DoStateChanges(gol.GenNextStateChanges());
     auto elapsed = timer.Elapsed();
     std::cout << "main thread time, generic implementation: " << elapsed << " milliseconds\n";
@@ -81,7 +68,7 @@ State MainThreadOneRow(GameOfLife& gol)
     TestUtils::Timer timer;
     timer.Reset();
     auto stateChanges = std::vector<StateChanges>();
-    for (int generation = 0; generation < 2; generation++)
+    for (int generation = 0; generation < numGenerations; generation++)
     {
         for (int row = 0; row < boardSize; row++)
         {
@@ -98,6 +85,19 @@ State MainThreadOneRow(GameOfLife& gol)
     return gol.GetState();
 }
 
+void barrierTwo(GameOfLife& gol, int compIdx)
+{
+    static Barrier BarrierHalf(2);
+    for (auto generation = 0; generation < numGenerations; generation++)
+    {
+        auto stateChange = gol.GenNextStateChanges<2>(compIdx);
+        BarrierHalf.phase1();
+        mutex.wait();
+        gol.DoStateChanges(stateChange);
+        mutex.notify();
+        BarrierHalf.phase2();
+    }
+}
 State TwoThreads(GameOfLife& gol)
 {
     gol.SetInitialState(InitialBoard());
@@ -105,14 +105,72 @@ State TwoThreads(GameOfLife& gol)
     auto vecThread = std::vector<std::thread>();
     for (int i = 0; i < 2; i++)
     {
-        vecThread.emplace_back(barierHalf, std::ref(gol), 2, i);
+        vecThread.emplace_back(barrierTwo, std::ref(gol), i);
     }
-    for (int i = 0; i < 2; i++)
+    for (auto& vec: vecThread)
     {
-        vecThread[i].join();
+        vec.join();
     }
     auto elapsed = timer.Elapsed();
-    std::cout << "two thread time: " << elapsed << " milliseconds\n";
+    std::cout << "two threads time: " << elapsed << " milliseconds\n";
+
+    return gol.GetState();
+}
+
+State MainThreadFourComps(GameOfLife& gol)
+{
+    gol.SetInitialState(InitialBoard());
+
+    TestUtils::Timer timer;
+    auto stateChanges = std::vector<StateChanges>();
+    for (int generation = 0; generation < numGenerations; generation++)
+    {
+        for (int compIdx = 0; compIdx < 4; compIdx++)
+        {
+            stateChanges.push_back(gol.GenNextStateChanges<4>(compIdx));
+        }
+
+        for (const auto& stateChange : stateChanges)
+            gol.DoStateChanges(stateChange);
+
+        stateChanges.clear();
+    }
+    auto elapsed = timer.Elapsed();
+    std::cout << "main thread time, four comps: " << elapsed << " milliseconds\n";
+    //gol.PrintBoardState();
+    return gol.GetState();
+}
+
+void barrierFour(GameOfLife& gol, int compIdx)
+{
+    static Barrier bQuart(4);
+    for (auto generation = 0; generation < numGenerations; generation++)
+    {
+        auto stateChange = gol.GenNextStateChanges<4>(compIdx);
+        bQuart.phase1();
+        mutex.wait();
+        gol.DoStateChanges(stateChange);
+        mutex.notify();
+        bQuart.phase2();
+    }
+}
+
+State FourThreads(GameOfLife& gol)
+{
+    gol.SetInitialState(InitialBoard());
+    TestUtils::Timer timer;
+    auto vecThread = std::vector<std::thread>();
+    for (int i = 0; i < 4; i++)
+    {
+        vecThread.emplace_back(barrierFour, std::ref(gol), i);
+    }
+    for (auto& vec: vecThread)
+    {
+        vec.join();
+    }
+    auto elapsed = timer.Elapsed();
+    std::cout << "four threads time: " << elapsed << " milliseconds\n";
+    //gol.PrintBoardState();
 
     return gol.GetState();
 }
@@ -126,11 +184,11 @@ State OneThreadOneRow(GameOfLife& gol)
     timer.Reset();
     for (int i = 0; i < boardSize; i++)
     {
-        vecThread.emplace_back(barierRow, std::ref(gol), i);
+        vecThread.emplace_back(barrierRow, std::ref(gol), i);
     }
-    for (auto i = 0; i < vecThread.size(); i++)
+    for (auto& vec: vecThread)
     {
-        vecThread[i].join();
+        vec.join();
     }
     auto elapsed = timer.Elapsed();
     std::cout << "one thread per row time: " << elapsed << " milliseconds\n";
@@ -140,23 +198,36 @@ State OneThreadOneRow(GameOfLife& gol)
 int main()
 {
     auto gol = GameOfLife(boardSize);
+    //gol.SetInitialState(InitialBoard());
+    //gol.PrintBoardState();
+    std::cout << boardSize << " x " << boardSize << " grid\n";
 
     auto genericImplementationState = GenericImplementation(gol);
-    auto oneRowState = MainThreadOneRow(gol);
+    //auto oneRowState = MainThreadOneRow(gol);
 
     auto twoThreadState = TwoThreads(gol);
-
     if (twoThreadState == genericImplementationState)
         std::cout << "states are equal\n";
     else
         std::cout << "states are not equal\n";
 
-    auto rowThreadState = OneThreadOneRow(gol);
+    //auto fourComps = MainThreadFourComps(gol);
+    //if (fourComps == genericImplementationState)
+    //    std::cout << "states are equal\n";
+    //else
+    //    std::cout << "states are not equal\n";
 
-    if (rowThreadState == genericImplementationState)
+    auto fourThreadState = FourThreads(gol);
+    if (fourThreadState == genericImplementationState)
         std::cout << "states are equal\n";
     else
         std::cout << "states are not equal\n";
+
+    //auto rowThreadState = OneThreadOneRow(gol);
+    //if (rowThreadState == genericImplementationState)
+    //    std::cout << "states are equal\n";
+    //else
+    //    std::cout << "states are not equal\n";
 
     return 0;
 }
