@@ -172,10 +172,10 @@ template<>
 StateChanges GameOfLife::GenNextStateChanges<2>(int compIdx)
 {
     auto comps = 2;
-    auto cellChanges = StateChanges();
-
     auto compSize = m_boardSize / comps;
 
+    auto cellChanges = StateChanges();
+    cellChanges.reserve(compSize);
     for (int i = compIdx * compSize; i < (compIdx + 1) * compSize; i++)
     {
         for (int j = 0; j < m_boardSize; j++)
@@ -228,6 +228,60 @@ StateChanges GameOfLife::GenNextStateChanges<4>(int compIdx)
     auto endColIdx = colIdx == 0 ? (colIdx + 1) * compSize : m_boardSize;
 
     auto cellChanges = StateChanges();
+    cellChanges.reserve(compSize);
+    for (auto i = startRowIdx; i < endRowIdx; i++)
+    {
+        for (auto j = startColIdx; j < endColIdx; j++)
+        {
+            auto nrAliveNeighbors = 0;
+            auto nrDeadNeighbors = 0;
+            for (const auto& [offX, offY] : Offsets)
+            {
+                if (!CoordsInBoardSize(m_boardSize, i + offX, j + offY))
+                    continue;
+
+                if (m_board[i + offX][j + offY])
+                    nrAliveNeighbors++;
+                else
+                    nrDeadNeighbors++;
+            }
+            if (m_board[i][j]) // cell is alive
+            {
+                if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
+                    cellChanges.emplace_back(i, j);
+                else if (nrAliveNeighbors >= 4) // if 4 or more alive neighbors, the cell dies by overpopulation
+                    cellChanges.emplace_back(i, j);
+            }
+            else                // cell is dead
+            {
+                if (nrAliveNeighbors == 3)
+                    cellChanges.emplace_back(i, j);
+            }
+        }
+    }
+
+    return cellChanges;
+}
+
+template<>
+StateChanges GameOfLife::GenNextStateChanges<16>(int compIdx)
+{
+    auto comps = 16;
+    auto valsPerComp = comps / 4;
+
+    auto compSize = m_boardSize / valsPerComp;
+
+    auto rowIdx = compIdx / valsPerComp;
+    auto colIdx = compIdx % valsPerComp;
+
+    auto startRowIdx = rowIdx * compSize;
+    auto endRowIdx = rowIdx != (valsPerComp - 1) ? (rowIdx + 1) * compSize : m_boardSize;
+
+    auto startColIdx = colIdx * compSize;
+    auto endColIdx = colIdx != (valsPerComp - 1) ? (colIdx + 1) * compSize : m_boardSize;
+
+    auto cellChanges = StateChanges();
+    cellChanges.reserve(compSize);
     for (auto i = startRowIdx; i < endRowIdx; i++)
     {
         for (auto j = startColIdx; j < endColIdx; j++)

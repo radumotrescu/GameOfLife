@@ -1,0 +1,57 @@
+500 x 500 grid
+main thread time, generic implementation: 15 milliseconds
+two threads time: 9 milliseconds
+four threads time: 5 milliseconds
+sixteen threads time: 3 milliseconds
+
+
+
+1000 x 1000 grid
+main thread time, generic implementation: 59 milliseconds
+two threads time: 32 milliseconds
+four threads time: 16 milliseconds
+sixteen threads time: 10 milliseconds
+
+
+
+5000 x 5000 grid
+main thread time, generic implementation: 1464 milliseconds
+two threads time: 829 milliseconds
+four threads time: 423 milliseconds
+sixteen threads time: 225 milliseconds
+
+
+
+10000 x 10000 grid
+main thread time, generic implementation: 5900 milliseconds
+two threads time: 3048 milliseconds
+four threads time: 1664 milliseconds
+sixteen threads time: 853 milliseconds
+
+
+
+20000 x 20000 grid
+main thread time, generic implementation: 23205 milliseconds
+two threads time: 11876 milliseconds
+four threads time: 6871 milliseconds
+sixteen threads time: 3638 milliseconds
+
+
+
+30000 x 30000 grid
+main thread time, generic implementation: 50724 milliseconds
+two threads time: 26514 milliseconds
+four threads time: 14339 milliseconds
+sixteen threads time: 7629 milliseconds
+
+40000 x 40000 grid
+main thread time, generic implementation: 88725 milliseconds
+two threads time: 47268 milliseconds
+four threads time: 25754 milliseconds
+sixteen threads time: 13500 milliseconds
+
+50000 x 50000 grid
+main thread time, generic implementation: 167278 milliseconds
+two threads time: 74622 milliseconds
+four threads time: 40234 milliseconds
+sixteen threads time: 21816 milliseconds

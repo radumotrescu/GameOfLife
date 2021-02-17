@@ -15,7 +15,7 @@ static Semaphore t2(2);
 static int count = 0;
 static int n = 2;
 
-static auto boardSize = 30000;
+static auto boardSize = 50000;
 static auto numGenerations = 1;
 
 static Barrier barrier(boardSize);
@@ -31,21 +31,26 @@ void barrierRow(GameOfLife& gol, int row)
     }
 }
 
-std::vector<std::vector<bool>> InitialBoard()
+std::vector<std::vector<bool>>& InitialBoard()
 {
     unsigned seed = 5;
     std::default_random_engine generator(seed);
 
     std::uniform_int_distribution<int> distribution(0, 1);
 
-    auto initialBoard = std::vector<std::vector<bool>>(boardSize);
-    for (auto& row : initialBoard)
-        row.resize(boardSize);
-
-    for (int i = 0; i < boardSize; ++i)
+    static auto initialBoard = std::vector<std::vector<bool>>(boardSize);
+    static auto isInit = false;
+    if (!isInit)
     {
-        for (int j = 0; j < boardSize; ++j)
-            initialBoard[i][j] = static_cast<bool>(distribution(generator));
+        for (auto& row : initialBoard)
+            row.resize(boardSize);
+
+        for (int i = 0; i < boardSize; ++i)
+        {
+            for (int j = 0; j < boardSize; ++j)
+                initialBoard[i][j] = static_cast<bool>(distribution(generator));
+        }
+        isInit = true;
     }
     return initialBoard;
 }
@@ -175,6 +180,40 @@ State FourThreads(GameOfLife& gol)
     return gol.GetState();
 }
 
+void barrierSixteen(GameOfLife& gol, int compIdx)
+{
+    static Barrier bSixteen(16);
+    for (auto generation = 0; generation < numGenerations; generation++)
+    {
+        auto stateChange = gol.GenNextStateChanges<16>(compIdx);
+        bSixteen.phase1();
+        mutex.wait();
+        gol.DoStateChanges(stateChange);
+        mutex.notify();
+        bSixteen.phase2();
+    }
+}
+
+State SixteenThreads(GameOfLife& gol)
+{
+    gol.SetInitialState(InitialBoard());
+    TestUtils::Timer timer;
+    auto vecThread = std::vector<std::thread>();
+    for (int i = 0; i < 16; i++)
+    {
+        vecThread.emplace_back(barrierSixteen, std::ref(gol), i);
+    }
+    for (auto& vec: vecThread)
+    {
+        vec.join();
+    }
+    auto elapsed = timer.Elapsed();
+    std::cout << "sixteen threads time: " << elapsed << " milliseconds\n";
+    //gol.PrintBoardState();
+
+    return gol.GetState();
+}
+
 State OneThreadOneRow(GameOfLife& gol)
 {
     gol.SetInitialState(InitialBoard());
@@ -219,6 +258,12 @@ int main()
 
     auto fourThreadState = FourThreads(gol);
     if (fourThreadState == genericImplementationState)
+        std::cout << "states are equal\n";
+    else
+        std::cout << "states are not equal\n";
+
+    auto sixteenThreadState = SixteenThreads(gol);
+    if (sixteenThreadState == genericImplementationState)
         std::cout << "states are equal\n";
     else
         std::cout << "states are not equal\n";

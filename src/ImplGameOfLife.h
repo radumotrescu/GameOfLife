@@ -54,3 +54,6 @@ StateChanges GameOfLife::GenNextStateChanges<2>(int compIdx);
 
 template<>
 StateChanges GameOfLife::GenNextStateChanges<4>(int compIdx);
+
+template<>
+StateChanges GameOfLife::GenNextStateChanges<16>(int compIdx);
