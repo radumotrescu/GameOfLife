@@ -5,6 +5,7 @@
 #include <random>
 
 #include <ImplGameOfLife.h>
+#include <ImplGameOfLife_Contiguous.h>
 #include <ThreadUtils.h>
 
 #include <TestUtils.h>
@@ -15,7 +16,7 @@ static Semaphore t2(2);
 static int count = 0;
 static int n = 2;
 
-static auto boardSize = 10000;
+static auto boardSize = 30000;
 static auto numGenerations = 1;
 
 static Barrier barrier(boardSize);
@@ -214,6 +215,40 @@ State SixteenThreads(GameOfLife& gol)
     return gol.GetState();
 }
 
+void barrierSixteen_contigous(GameOfLife_Contiguous& gol, int compIdx)
+{
+    static Barrier bSixteen(16);
+    for (auto generation = 0; generation < numGenerations; generation++)
+    {
+        auto stateChange = gol.GenNextStateChanges<16>(compIdx);
+        bSixteen.phase1();
+        mutex.wait();
+        gol.DoStateChanges(stateChange);
+        mutex.notify();
+        bSixteen.phase2();
+    }
+}
+
+State_Contiguous SixteenThreads(GameOfLife_Contiguous& gol)
+{
+    gol.SetInitialState(InitialBoard());
+    TestUtils::Timer timer;
+    auto vecThread = std::vector<std::thread>();
+    for (int i = 0; i < 16; i++)
+    {
+        vecThread.emplace_back(barrierSixteen_contigous, std::ref(gol), i);
+    }
+    for (auto& vec: vecThread)
+    {
+        vec.join();
+    }
+    auto elapsed = timer.Elapsed();
+    std::cout << "sixteen threads time: " << elapsed << " milliseconds\n";
+    //gol.PrintBoardState();
+
+    return gol.GetState();
+}
+
 State OneThreadOneRow(GameOfLife& gol)
 {
     gol.SetInitialState(InitialBoard());
@@ -267,6 +302,14 @@ int main()
         std::cout << "states are equal\n";
     else
         std::cout << "states are not equal\n";
+
+    auto gol_contigous = GameOfLife_Contiguous(boardSize);
+
+    auto sixteenThreadState_contigous = SixteenThreads(gol_contigous);
+    //if (sixteenThreadState_contigous == genericImplementationState)
+    //    std::cout << "states are equal\n";
+    //else
+    //    std::cout << "states are not equal\n";
 
     //auto rowThreadState = OneThreadOneRow(gol);
     //if (rowThreadState == genericImplementationState)
