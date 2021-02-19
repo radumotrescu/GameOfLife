@@ -16,7 +16,7 @@ static Semaphore t2(2);
 static int count = 0;
 static int n = 2;
 
-static auto boardSize = 30000;
+static auto boardSize = 40000;
 static auto numGenerations = 1;
 
 static Barrier barrier(boardSize);
@@ -217,15 +217,15 @@ State SixteenThreads(GameOfLife& gol)
 
 void barrierSixteen_contigous(GameOfLife_Contiguous& gol, int compIdx)
 {
-    static Barrier bSixteen(16);
+    static Barrier bSixteen_contigous(16);
     for (auto generation = 0; generation < numGenerations; generation++)
     {
         auto stateChange = gol.GenNextStateChanges<16>(compIdx);
-        bSixteen.phase1();
+        bSixteen_contigous.phase1();
         mutex.wait();
         gol.DoStateChanges(stateChange);
         mutex.notify();
-        bSixteen.phase2();
+        bSixteen_contigous.phase2();
     }
 }
 
