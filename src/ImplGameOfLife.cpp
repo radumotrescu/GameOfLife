@@ -35,11 +35,16 @@ GameOfLife::GameOfLife(int boardSize) :m_boardSize(boardSize)
     }
 }
 
+auto GameOfLife::at(int x, int y)
+{
+    return m_board.at(x).at(y);
+}
+
 void GameOfLife::SetInitialState(const std::vector<std::pair<int, int>>& aliveCellsAtStart)
 {
     for (const auto& [x, y] : aliveCellsAtStart)
     {
-        m_board[x][y] = true;
+        at(x, y) = true;
     }
 }
 
@@ -60,7 +65,7 @@ State GameOfLife::GetState()
     return m_board;
 }
 
-StateChanges GameOfLife::GenNextStateChanges() const
+StateChanges GameOfLife::GenNextStateChanges()
 {
     auto cellChanges = StateChanges();
 
@@ -75,12 +80,12 @@ StateChanges GameOfLife::GenNextStateChanges() const
                 if (!CoordsInBoardSize(m_boardSize, i + offX, j + offY))
                     continue;
 
-                if (m_board[i + offX][j + offY])
+                if (at(i + offX,j + offY))
                     nrAliveNeighbors++;
                 else
                     nrDeadNeighbors++;
             }
-            if (m_board[i][j]) // cell is alive
+            if (at(i,j)) // cell is alive
             {
                 if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
                     cellChanges.emplace_back(i, j);
@@ -119,12 +124,12 @@ StateChanges GameOfLife::GenNextStateChangesForRow(int row)
             if (!CoordsInBoardSize(m_boardSize, row + offX, j + offY))
                 continue;
 
-            if (m_board[row + offX][j + offY])
+            if (at(row + offX,j + offY))
                 nrAliveNeighbors++;
             else
                 nrDeadNeighbors++;
         }
-        if (m_board[row][j]) // cell is alive
+        if (at(row,j)) // cell is alive
         {
             if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
                 cellChanges.emplace_back(row, j);
@@ -146,7 +151,7 @@ void GameOfLife::DoStateChanges(const std::vector<std::pair<int, int>>& cellChan
 {
     for (const auto& [x, y] : cellChanges)
     {
-        m_board[x][y] = !m_board[x][y];
+        at(x,y) = !at(x,y);
     }
 }
 
@@ -156,7 +161,7 @@ void GameOfLife::PrintBoardState()
     {
         for (int j = 0; j < m_boardSize; j++)
         {
-            std::cout << m_board[i][j];
+            std::cout << at(i,j);
         }
         std::cout << "\n";
     }
@@ -165,7 +170,7 @@ void GameOfLife::PrintBoardState()
 
 void GameOfLife::ToggleCellState(const std::pair<int, int>& cell)
 {
-    m_board[cell.first][cell.second] = !m_board[cell.first][cell.second];
+    at(cell.first,cell.second) = !at(cell.first,cell.second);
 }
 
 template<>
@@ -187,12 +192,12 @@ StateChanges GameOfLife::GenNextStateChanges<2>(int compIdx)
                 if (!CoordsInBoardSize(m_boardSize, i + offX, j + offY))
                     continue;
 
-                if (m_board[i + offX][j + offY])
+                if (at(i + offX,j + offY))
                     nrAliveNeighbors++;
                 else
                     nrDeadNeighbors++;
             }
-            if (m_board[i][j]) // cell is alive
+            if (at(i,j)) // cell is alive
             {
                 if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
                     cellChanges.emplace_back(i, j);
@@ -240,12 +245,12 @@ StateChanges GameOfLife::GenNextStateChanges<4>(int compIdx)
                 if (!CoordsInBoardSize(m_boardSize, i + offX, j + offY))
                     continue;
 
-                if (m_board[i + offX][j + offY])
+                if (at(i + offX,j + offY))
                     nrAliveNeighbors++;
                 else
                     nrDeadNeighbors++;
             }
-            if (m_board[i][j]) // cell is alive
+            if (at(i,j)) // cell is alive
             {
                 if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
                     cellChanges.emplace_back(i, j);
@@ -293,12 +298,12 @@ StateChanges GameOfLife::GenNextStateChanges<16>(int compIdx)
                 if (!CoordsInBoardSize(m_boardSize, i + offX, j + offY))
                     continue;
 
-                if (m_board[i + offX][j + offY])
+                if (at(i + offX,j + offY))
                     nrAliveNeighbors++;
                 else
                     nrDeadNeighbors++;
             }
-            if (m_board[i][j]) // cell is alive
+            if (at(i,j)) // cell is alive
             {
                 if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
                     cellChanges.emplace_back(i, j);

@@ -23,7 +23,9 @@ public:
 
     State GetState();
 
-    StateChanges GenNextStateChanges() const;
+    auto at(int x, int y);
+
+    StateChanges GenNextStateChanges();
 
     template<int compSize>
     StateChanges GenNextStateChanges(int nrComp);

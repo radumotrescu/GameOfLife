@@ -15,7 +15,7 @@ static Semaphore t2(2);
 static int count = 0;
 static int n = 2;
 
-static auto boardSize = 50000;
+static auto boardSize = 10000;
 static auto numGenerations = 1;
 
 static Barrier barrier(boardSize);
