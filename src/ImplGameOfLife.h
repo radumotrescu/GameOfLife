@@ -45,8 +45,10 @@ public:
     void ToggleCellState(const std::pair<int, int>& cell);
 
     void PrintBoardState();
-
 private:
+
+    void AnalyzeStateChanges(StateChanges& stateChanges, int i, int j);
+
     const int m_boardSize;
     mutable State m_board;
 };

@@ -73,30 +73,7 @@ StateChanges GameOfLife::GenNextStateChanges()
     {
         for (int j = 0; j < m_boardSize; j++)
         {
-            auto nrAliveNeighbors = 0;
-            auto nrDeadNeighbors = 0;
-            for (const auto& [offX, offY] : Offsets)
-            {
-                if (!CoordsInBoardSize(m_boardSize, i + offX, j + offY))
-                    continue;
-
-                if (at(i + offX,j + offY))
-                    nrAliveNeighbors++;
-                else
-                    nrDeadNeighbors++;
-            }
-            if (at(i,j)) // cell is alive
-            {
-                if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
-                    cellChanges.emplace_back(i, j);
-                else if (nrAliveNeighbors >= 4) // if 4 or more alive neighbors, the cell dies by overpopulation
-                    cellChanges.emplace_back(i, j);
-            }
-            else                // cell is dead
-            {
-                if (nrAliveNeighbors == 3)
-                    cellChanges.emplace_back(i, j);
-            }
+            AnalyzeStateChanges(cellChanges, i, j);
         }
     }
 
@@ -117,30 +94,7 @@ StateChanges GameOfLife::GenNextStateChangesForRow(int row)
 
     for (int j = 0; j < m_boardSize; j++)
     {
-        auto nrAliveNeighbors = 0;
-        auto nrDeadNeighbors = 0;
-        for (const auto& [offX, offY] : Offsets)
-        {
-            if (!CoordsInBoardSize(m_boardSize, row + offX, j + offY))
-                continue;
-
-            if (at(row + offX,j + offY))
-                nrAliveNeighbors++;
-            else
-                nrDeadNeighbors++;
-        }
-        if (at(row,j)) // cell is alive
-        {
-            if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
-                cellChanges.emplace_back(row, j);
-            else if (nrAliveNeighbors >= 4) // if 4 or more alive neighbors, the cell dies by overpopulation
-                cellChanges.emplace_back(row, j);
-        }
-        else                // cell is dead
-        {
-            if (nrAliveNeighbors == 3)
-                cellChanges.emplace_back(row, j);
-        }
+        AnalyzeStateChanges(cellChanges, row, j);
     }
 
     return cellChanges;
@@ -151,7 +105,7 @@ void GameOfLife::DoStateChanges(const std::vector<std::pair<int, int>>& cellChan
 {
     for (const auto& [x, y] : cellChanges)
     {
-        at(x,y) = !at(x,y);
+        at(x, y) = !at(x, y);
     }
 }
 
@@ -161,7 +115,7 @@ void GameOfLife::PrintBoardState()
     {
         for (int j = 0; j < m_boardSize; j++)
         {
-            std::cout << at(i,j);
+            std::cout << at(i, j);
         }
         std::cout << "\n";
     }
@@ -170,7 +124,36 @@ void GameOfLife::PrintBoardState()
 
 void GameOfLife::ToggleCellState(const std::pair<int, int>& cell)
 {
-    at(cell.first,cell.second) = !at(cell.first,cell.second);
+    at(cell.first, cell.second) = !at(cell.first, cell.second);
+}
+
+void GameOfLife::AnalyzeStateChanges(StateChanges& cellChanges, int i, int j)
+{
+
+    auto nrAliveNeighbors = 0;
+    auto nrDeadNeighbors = 0;
+    for (const auto& [offX, offY] : Offsets)
+    {
+        if (!CoordsInBoardSize(m_boardSize, i + offX, j + offY))
+            continue;
+
+        if (at(i + offX, j + offY))
+            nrAliveNeighbors++;
+        else
+            nrDeadNeighbors++;
+    }
+    if (at(i, j)) // cell is alive
+    {
+        if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
+            cellChanges.emplace_back(i, j);
+        else if (nrAliveNeighbors >= 4) // if 4 or more alive neighbors, the cell dies by overpopulation
+            cellChanges.emplace_back(i, j);
+    }
+    else                // cell is dead
+    {
+        if (nrAliveNeighbors == 3)
+            cellChanges.emplace_back(i, j);
+    }
 }
 
 template<>
@@ -185,30 +168,7 @@ StateChanges GameOfLife::GenNextStateChanges<2>(int compIdx)
     {
         for (int j = 0; j < m_boardSize; j++)
         {
-            auto nrAliveNeighbors = 0;
-            auto nrDeadNeighbors = 0;
-            for (const auto& [offX, offY] : Offsets)
-            {
-                if (!CoordsInBoardSize(m_boardSize, i + offX, j + offY))
-                    continue;
-
-                if (at(i + offX,j + offY))
-                    nrAliveNeighbors++;
-                else
-                    nrDeadNeighbors++;
-            }
-            if (at(i,j)) // cell is alive
-            {
-                if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
-                    cellChanges.emplace_back(i, j);
-                else if (nrAliveNeighbors >= 4) // if 4 or more alive neighbors, the cell dies by overpopulation
-                    cellChanges.emplace_back(i, j);
-            }
-            else                // cell is dead
-            {
-                if (nrAliveNeighbors == 3)
-                    cellChanges.emplace_back(i, j);
-            }
+            AnalyzeStateChanges(cellChanges, i, j);
         }
     }
 
@@ -238,30 +198,7 @@ StateChanges GameOfLife::GenNextStateChanges<4>(int compIdx)
     {
         for (auto j = startColIdx; j < endColIdx; j++)
         {
-            auto nrAliveNeighbors = 0;
-            auto nrDeadNeighbors = 0;
-            for (const auto& [offX, offY] : Offsets)
-            {
-                if (!CoordsInBoardSize(m_boardSize, i + offX, j + offY))
-                    continue;
-
-                if (at(i + offX,j + offY))
-                    nrAliveNeighbors++;
-                else
-                    nrDeadNeighbors++;
-            }
-            if (at(i,j)) // cell is alive
-            {
-                if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
-                    cellChanges.emplace_back(i, j);
-                else if (nrAliveNeighbors >= 4) // if 4 or more alive neighbors, the cell dies by overpopulation
-                    cellChanges.emplace_back(i, j);
-            }
-            else                // cell is dead
-            {
-                if (nrAliveNeighbors == 3)
-                    cellChanges.emplace_back(i, j);
-            }
+            AnalyzeStateChanges(cellChanges, i, j);
         }
     }
 
@@ -291,30 +228,7 @@ StateChanges GameOfLife::GenNextStateChanges<16>(int compIdx)
     {
         for (auto j = startColIdx; j < endColIdx; j++)
         {
-            auto nrAliveNeighbors = 0;
-            auto nrDeadNeighbors = 0;
-            for (const auto& [offX, offY] : Offsets)
-            {
-                if (!CoordsInBoardSize(m_boardSize, i + offX, j + offY))
-                    continue;
-
-                if (at(i + offX,j + offY))
-                    nrAliveNeighbors++;
-                else
-                    nrDeadNeighbors++;
-            }
-            if (at(i,j)) // cell is alive
-            {
-                if (nrAliveNeighbors <= 1) // if 0 or 1 alive neighbors, the cell dies by solitude
-                    cellChanges.emplace_back(i, j);
-                else if (nrAliveNeighbors >= 4) // if 4 or more alive neighbors, the cell dies by overpopulation
-                    cellChanges.emplace_back(i, j);
-            }
-            else                // cell is dead
-            {
-                if (nrAliveNeighbors == 3)
-                    cellChanges.emplace_back(i, j);
-            }
+            AnalyzeStateChanges(cellChanges, i, j);
         }
     }
 
