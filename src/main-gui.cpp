@@ -23,24 +23,61 @@
 #include <GL/gl3w.h>            // Initialize with gl3wInit()
 #endif
 
-//static Semaphore mutex(1);
 //static Semaphore t1(0);
 //static Semaphore t2(1);
 //static int count = 0;
 //static int n = 2;
 
 static Semaphore simSemaphore(0);
+static Barrier bSixteen(16);
+static Semaphore sixteenSemaphore(0);
 
-void SimulationThreadCode(GameOfLife& gol, bool& done)
-{
-    while (!done)
+namespace {
+    void barrierSixteen(GameOfLife& gol, int compIdx, int done)
     {
-        simSemaphore.wait();
-        gol.DoStateChanges(gol.GenNextStateChanges());
+        static Semaphore stateChangeMutex(1);
+
+        sixteenSemaphore.wait(); // wait for the simulation thread to notify the start
+       
+        while (!done)
+        {
+            auto stateChange = gol.GenNextStateChanges<16>(compIdx);
+            bSixteen.phase1();
+            stateChangeMutex.wait();
+            gol.DoStateChanges(stateChange);
+            stateChangeMutex.notify();
+            bSixteen.phase2();
+
+            sixteenSemaphore.wait();
+        }
+    }
+
+    void SimulationThreadCode(GameOfLife& gol, bool& done)
+    {
+        auto vecThread = std::vector<std::thread>();
+        for (int i = 0; i < 16; i++)
+        {
+            vecThread.emplace_back(barrierSixteen, std::ref(gol), i, done);
+        }
+        while (!done)
+        {
+            simSemaphore.wait();
+
+            // notify the 16 threads to start
+            for (auto i = 0; i < 16; i++)
+                sixteenSemaphore.notify();
+        }
+
+        for (int i = 0; i < sixteenSemaphore.GetCount(); i++)
+            sixteenSemaphore.notify();
+        for (auto& vec : vecThread)
+        {
+            vec.join();
+        }
     }
 }
 
- //Main code
+//Main code
 int main(int, char**)
 {
     // Setup SDL
@@ -167,7 +204,7 @@ int main(int, char**)
             static double refreshTime = 0.0;
             ImGui::SetNextWindowSize(ImVec2(1800, 1500));
             ImGui::Begin("Game Of Life Window", &showGameOfLifeWindow, ImGuiWindowFlags_HorizontalScrollbar);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            if(ImGui::Button("Quit"))
+            if (ImGui::Button("Quit"))
             {
                 done = true;
             }
@@ -206,38 +243,12 @@ int main(int, char**)
                 }
                 while (refreshTime < ImGui::GetTime())
                 {
-                    //for (int i = 0; i < n; i++)
-                    //{
-                    //    threadVec.push_back(std::thread(barrier, std::ref(gol), n, i));
-                    //}
-
-                    //ImGui::Text("Num threads: %d", count);
-                    //for (auto& thread: threadVec)
-                    //{
-                    //    thread.join();
-                    //}
-                    //threadVec.clear();
-
                     refreshTime += 1. / float(refreshRate);
 
                     // Let the simulation code run here
                     simSemaphore.notify();
                 }
             }
-
-            //for (int y = 0; y < boardSize; y++)
-            //    for (int x = 0; x < boardSize; x++)
-            //    {
-            //        if (x > 0)
-            //            ImGui::SameLine();
-            //        ImGui::PushID(y * boardSize + x);
-            //        ImGui::PushStyleColor(ImGuiCol_Header, IM_COL32(255, 0, 0, 255));
-            //        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
-
-            //        ImGui::PopStyleColor();
-            //        ImGui::PopStyleVar();
-            //        ImGui::PopID();
-            //    }
 
             ImGui::NewLine();
             ImVec2 startPosition = ImGui::GetCursorScreenPos();      // this is the position at which the next ImGui object will be drawn, ImDrawList API uses screen coordinates!

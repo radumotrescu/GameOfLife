@@ -10,7 +10,7 @@
 
 #include <TestUtils.h>
 
-static Semaphore mutex(1);
+static Semaphore stateChangeMutex(1);
 static Semaphore t1(0);
 static Semaphore t2(2);
 static int count = 0;
@@ -98,9 +98,9 @@ void barrierTwo(GameOfLife& gol, int compIdx)
     {
         auto stateChange = gol.GenNextStateChanges<2>(compIdx);
         BarrierHalf.phase1();
-        mutex.wait();
+        stateChangeMutex.wait();
         gol.DoStateChanges(stateChange);
-        mutex.notify();
+        stateChangeMutex.notify();
         BarrierHalf.phase2();
     }
 }
@@ -154,9 +154,9 @@ void barrierFour(GameOfLife& gol, int compIdx)
     {
         auto stateChange = gol.GenNextStateChanges<4>(compIdx);
         bQuart.phase1();
-        mutex.wait();
+        stateChangeMutex.wait();
         gol.DoStateChanges(stateChange);
-        mutex.notify();
+        stateChangeMutex.notify();
         bQuart.phase2();
     }
 }
@@ -188,9 +188,9 @@ void barrierSixteen(GameOfLife& gol, int compIdx)
     {
         auto stateChange = gol.GenNextStateChanges<16>(compIdx);
         bSixteen.phase1();
-        mutex.wait();
+        stateChangeMutex.wait();
         gol.DoStateChanges(stateChange);
-        mutex.notify();
+        stateChangeMutex.notify();
         bSixteen.phase2();
     }
 }
@@ -222,9 +222,9 @@ void barrierSixteen_contigous(GameOfLife_Contiguous& gol, int compIdx)
     {
         auto stateChange = gol.GenNextStateChanges<16>(compIdx);
         bSixteen_contigous.phase1();
-        mutex.wait();
+        stateChangeMutex.wait();
         gol.DoStateChanges(stateChange);
-        mutex.notify();
+        stateChangeMutex.notify();
         bSixteen_contigous.phase2();
     }
 }
