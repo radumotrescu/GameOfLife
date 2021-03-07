@@ -84,21 +84,6 @@ int main(int, char**)
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != NULL);
-
     // Our state
     bool show_demo_window = false;
     bool show_another_window = false;
@@ -155,22 +140,10 @@ int main(int, char**)
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         {
-            static float f = 0.0f;
-            static int counter = 0;
-
             ImGui::Begin("Main Window");                          // Create a window called "Hello, world!" and append into it.
 
             ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
             ImGui::Checkbox("Show Game of Life Window", &showGameOfLifeWindow);
-
-            //ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            //if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-            //    counter++;
-            //ImGui::SameLine();
-            //ImGui::Text("counter = %d", counter); 
-            //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
             ImGui::End();
         }
@@ -227,6 +200,8 @@ int main(int, char**)
                     //    thread.join();
                     //}
                     //threadVec.clear();
+
+                    gol.DoStateChanges(gol.GenNextStateChanges());
                     
                     refreshTime += 1. / float(refreshRate);
                 }
@@ -245,30 +220,23 @@ int main(int, char**)
             //        ImGui::PopStyleVar();
             //        ImGui::PopID();
             //    }
-            ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
-            ImVec2 canvas_sz = ImGui::GetContentRegionAvail();   // Resize canvas to what's available
-            if (canvas_sz.x < 50.0f) canvas_sz.x = 50.0f;
-            if (canvas_sz.y < 50.0f) canvas_sz.y = 50.0f;
-            ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
 
-            // Draw border and background color
-            //auto start = ImVec2{ 0., 200. };
             ImGui::NewLine();
-            ImVec2 start = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
-            auto size = ImVec2{ 5., 5. };
+            ImVec2 startPosition = ImGui::GetCursorScreenPos();      // this is the position at which the next ImGui object will be drawn, ImDrawList API uses screen coordinates!
+            auto rectSize = ImVec2{ 5., 5. };
 
-            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            ImDrawList* drawList = ImGui::GetWindowDrawList();
             auto colorToDraw = green;
             for (int y = 0; y < boardSize; y++)
                 for (int x = 0; x < boardSize; x++)
                 {
-                    auto rectStart = ImVec2(start.x + x * size.x, start.y + y * size.y);
+                    auto rectStart = ImVec2(startPosition.x + x * rectSize.x, startPosition.y + y * rectSize.y);
                     colorToDraw = green;
                     if (gol[x][y])
                     {
                         colorToDraw = red;
                     }
-                    draw_list->AddRect(rectStart, ImVec2{ rectStart.x + size.x, rectStart.y + size.y }, colorToDraw);
+                    drawList->AddRect(rectStart, ImVec2{ rectStart.x + rectSize.x, rectStart.y + rectSize.y }, colorToDraw);
                 }
             ImGui::End();
         }
