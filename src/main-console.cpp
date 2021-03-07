@@ -269,53 +269,53 @@ State OneThreadOneRow(GameOfLife& gol)
     return gol.GetState();
 }
 
-int main()
-{
-    auto gol = GameOfLife(boardSize);
-    //gol.SetInitialState(InitialBoard());
-    //gol.PrintBoardState();
-    std::cout << boardSize << " x " << boardSize << " grid\n";
-
-    auto genericImplementationState = GenericImplementation(gol);
-    //auto oneRowState = MainThreadOneRow(gol);
-
-    auto twoThreadState = TwoThreads(gol);
-    if (twoThreadState == genericImplementationState)
-        std::cout << "states are equal\n";
-    else
-        std::cout << "states are not equal\n";
-
-    //auto fourComps = MainThreadFourComps(gol);
-    //if (fourComps == genericImplementationState)
-    //    std::cout << "states are equal\n";
-    //else
-    //    std::cout << "states are not equal\n";
-
-    auto fourThreadState = FourThreads(gol);
-    if (fourThreadState == genericImplementationState)
-        std::cout << "states are equal\n";
-    else
-        std::cout << "states are not equal\n";
-
-    auto sixteenThreadState = SixteenThreads(gol);
-    if (sixteenThreadState == genericImplementationState)
-        std::cout << "states are equal\n";
-    else
-        std::cout << "states are not equal\n";
-
-    auto gol_contigous = GameOfLife_Contiguous(boardSize);
-
-    auto sixteenThreadState_contigous = SixteenThreads(gol_contigous);
-    //if (sixteenThreadState_contigous == genericImplementationState)
-    //    std::cout << "states are equal\n";
-    //else
-    //    std::cout << "states are not equal\n";
-
-    //auto rowThreadState = OneThreadOneRow(gol);
-    //if (rowThreadState == genericImplementationState)
-    //    std::cout << "states are equal\n";
-    //else
-    //    std::cout << "states are not equal\n";
-
-    return 0;
-}
+//int main()
+//{
+//    auto gol = GameOfLife(boardSize);
+//    //gol.SetInitialState(InitialBoard());
+//    //gol.PrintBoardState();
+//    std::cout << boardSize << " x " << boardSize << " grid\n";
+//
+//    auto genericImplementationState = GenericImplementation(gol);
+//    //auto oneRowState = MainThreadOneRow(gol);
+//
+//    auto twoThreadState = TwoThreads(gol);
+//    if (twoThreadState == genericImplementationState)
+//        std::cout << "states are equal\n";
+//    else
+//        std::cout << "states are not equal\n";
+//
+//    //auto fourComps = MainThreadFourComps(gol);
+//    //if (fourComps == genericImplementationState)
+//    //    std::cout << "states are equal\n";
+//    //else
+//    //    std::cout << "states are not equal\n";
+//
+//    auto fourThreadState = FourThreads(gol);
+//    if (fourThreadState == genericImplementationState)
+//        std::cout << "states are equal\n";
+//    else
+//        std::cout << "states are not equal\n";
+//
+//    auto sixteenThreadState = SixteenThreads(gol);
+//    if (sixteenThreadState == genericImplementationState)
+//        std::cout << "states are equal\n";
+//    else
+//        std::cout << "states are not equal\n";
+//
+//    auto gol_contigous = GameOfLife_Contiguous(boardSize);
+//
+//    auto sixteenThreadState_contigous = SixteenThreads(gol_contigous);
+//    //if (sixteenThreadState_contigous == genericImplementationState)
+//    //    std::cout << "states are equal\n";
+//    //else
+//    //    std::cout << "states are not equal\n";
+//
+//    //auto rowThreadState = OneThreadOneRow(gol);
+//    //if (rowThreadState == genericImplementationState)
+//    //    std::cout << "states are equal\n";
+//    //else
+//    //    std::cout << "states are not equal\n";
+//
+//    return 0;
+//}
