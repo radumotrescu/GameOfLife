@@ -2,6 +2,7 @@
 
 #include <array>
 #include <iostream>
+#include <random>
 
 namespace
 {
@@ -32,6 +33,27 @@ GameOfLife::GameOfLife(int boardSize) :m_boardSize(boardSize)
     for (auto& row : m_board)
     {
         row.resize(m_boardSize); // set num col
+    }
+}
+
+void GameOfLife::InitBoardWithRandomData(unsigned seed)
+{
+    std::default_random_engine generator(seed);
+
+    std::uniform_int_distribution<int> distribution(0, 1);
+
+    static auto isInit = false;
+    if (!isInit)
+    {
+        for (auto& row : m_board)
+            row.resize(m_boardSize);
+
+        for (int i = 0; i < m_boardSize; ++i)
+        {
+            for (int j = 0; j < m_boardSize; ++j)
+                m_board[i][j] = static_cast<bool>(distribution(generator));
+        }
+        isInit = true;
     }
 }
 

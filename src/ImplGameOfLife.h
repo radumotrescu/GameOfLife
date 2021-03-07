@@ -45,6 +45,8 @@ public:
     void ToggleCellState(const std::pair<int, int>& cell);
 
     void PrintBoardState();
+    void InitBoardWithRandomData(unsigned seed);
+
 private:
 
     void AnalyzeStateChanges(StateChanges& stateChanges, int i, int j);

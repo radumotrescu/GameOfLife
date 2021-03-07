@@ -108,7 +108,9 @@ int main(int, char**)
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 
-    auto gol = GameOfLife(200);
+    auto boardSize = 200;
+    auto gol = GameOfLife(boardSize);
+    gol.InitBoardWithRandomData(5);
     //gol.SetInitialState({
     //    {1, 1},
     //    {2, 1},
@@ -119,6 +121,9 @@ int main(int, char**)
     //    });
 
     auto threadVec = std::vector<std::thread>();
+
+    auto green = IM_COL32(0, 200, 0, 255);
+    auto red = IM_COL32(200, 0, 0, 255);
 
     // Main loop
     bool done = false;
@@ -173,8 +178,8 @@ int main(int, char**)
         if (showGameOfLifeWindow)
         {
             static double refreshTime = 0.0;
-            ImGui::SetNextWindowSize(ImVec2(1500, 900));
-            ImGui::Begin("Game Of Life Window", &showGameOfLifeWindow, ImGuiWindowFlags_AlwaysAutoResize & ImGuiWindowFlags_HorizontalScrollbar);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+            ImGui::SetNextWindowSize(ImVec2(1800, 1500));
+            ImGui::Begin("Game Of Life Window", &showGameOfLifeWindow, ImGuiWindowFlags_HorizontalScrollbar);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
             if (ImGui::Button("Start simulation"))
             {
                 runSimulation = true;
@@ -222,24 +227,24 @@ int main(int, char**)
                     //    thread.join();
                     //}
                     //threadVec.clear();
+                    
                     refreshTime += 1. / float(refreshRate);
                 }
             }
 
-            auto boardSize = gol.BoardSize();
-            for (int y = 0; y < boardSize; y++)
-                for (int x = 0; x < boardSize; x++)
-                {
-                    if (x > 0)
-                        ImGui::SameLine();
-                    ImGui::PushID(y * boardSize + x);
-                    ImGui::PushStyleColor(ImGuiCol_Header, IM_COL32(255, 0, 0, 255));
-                    ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+            //for (int y = 0; y < boardSize; y++)
+            //    for (int x = 0; x < boardSize; x++)
+            //    {
+            //        if (x > 0)
+            //            ImGui::SameLine();
+            //        ImGui::PushID(y * boardSize + x);
+            //        ImGui::PushStyleColor(ImGuiCol_Header, IM_COL32(255, 0, 0, 255));
+            //        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
 
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleVar();
-                    ImGui::PopID();
-                }
+            //        ImGui::PopStyleColor();
+            //        ImGui::PopStyleVar();
+            //        ImGui::PopID();
+            //    }
             ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
             ImVec2 canvas_sz = ImGui::GetContentRegionAvail();   // Resize canvas to what's available
             if (canvas_sz.x < 50.0f) canvas_sz.x = 50.0f;
@@ -250,14 +255,20 @@ int main(int, char**)
             //auto start = ImVec2{ 0., 200. };
             ImGui::NewLine();
             ImVec2 start = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
-            auto size = ImVec2{ 2., 2. };
+            auto size = ImVec2{ 5., 5. };
 
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            auto colorToDraw = green;
             for (int y = 0; y < boardSize; y++)
                 for (int x = 0; x < boardSize; x++)
                 {
                     auto rectStart = ImVec2(start.x + x * size.x, start.y + y * size.y);
-                    draw_list->AddRectFilled(rectStart, ImVec2{ rectStart.x + rectStart.x, rectStart.y + rectStart.y }, IM_COL32(125, 125, 125, 255));
+                    colorToDraw = green;
+                    if (gol[x][y])
+                    {
+                        colorToDraw = red;
+                    }
+                    draw_list->AddRect(rectStart, ImVec2{ rectStart.x + size.x, rectStart.y + size.y }, colorToDraw);
                 }
             ImGui::End();
         }
