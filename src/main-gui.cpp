@@ -29,6 +29,17 @@
 //static int count = 0;
 //static int n = 2;
 
+static Semaphore simSemaphore(0);
+
+void SimulationThreadCode(GameOfLife& gol, bool& done)
+{
+    while (!done)
+    {
+        simSemaphore.wait();
+        gol.DoStateChanges(gol.GenNextStateChanges());
+    }
+}
+
  //Main code
 int main(int, char**)
 {
@@ -110,8 +121,11 @@ int main(int, char**)
     auto green = IM_COL32(0, 200, 0, 255);
     auto red = IM_COL32(200, 0, 0, 255);
 
-    // Main loop
     bool done = false;
+    // Simulation Thread
+    auto simThread = std::thread(SimulationThreadCode, std::ref(gol), std::ref(done));
+
+    // Main loop
     while (!done)
     {
         // Poll and handle events (inputs, window resize, etc.)
@@ -153,6 +167,10 @@ int main(int, char**)
             static double refreshTime = 0.0;
             ImGui::SetNextWindowSize(ImVec2(1800, 1500));
             ImGui::Begin("Game Of Life Window", &showGameOfLifeWindow, ImGuiWindowFlags_HorizontalScrollbar);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+            if(ImGui::Button("Quit"))
+            {
+                done = true;
+            }
             if (ImGui::Button("Start simulation"))
             {
                 runSimulation = true;
@@ -164,20 +182,19 @@ int main(int, char**)
             }
 
             ImGui::NewLine();
-            if (ImGui::Button("Next iteration"))
-                doNextIteration = true;
+            //if (ImGui::Button("Next iteration"))
+            //    doNextIteration = true;
 
             static int refreshRate = 2;
             ImGui::PushItemWidth(100);
             ImGui::InputInt("Refreshes per second", &refreshRate);
             ImGui::PopItemWidth();
+            ImGui::Text("semaphore count %d", simSemaphore.GetCount());
 
             if (!runSimulation)
             {
                 if (doNextIteration)
                 {
-                    //auto thread = std::thread(barrier, std::ref(gol));
-                    //thread.join();
                     doNextIteration = false;
                 }
             }
@@ -201,9 +218,10 @@ int main(int, char**)
                     //}
                     //threadVec.clear();
 
-                    gol.DoStateChanges(gol.GenNextStateChanges());
-                    
                     refreshTime += 1. / float(refreshRate);
+
+                    // Let the simulation code run here
+                    simSemaphore.notify();
                 }
             }
 
@@ -249,6 +267,8 @@ int main(int, char**)
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(window);
     }
+
+    simThread.join();
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();

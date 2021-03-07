@@ -31,6 +31,7 @@ public:
         }
         count--;
     }
+    int GetCount() const { return count; };
 private:
     std::mutex mtx;
     std::condition_variable cv;
