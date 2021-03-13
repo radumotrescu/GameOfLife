@@ -31,12 +31,12 @@
 static Semaphore simSemaphore(0);
 static Barrier bSixteen(16);
 static Semaphore sixteenSemaphore(0);
+static Semaphore mutex(1);
 
 namespace {
-    void barrierSixteen(GameOfLife& gol, int compIdx, int done)
+    void barrierSixteen(GameOfLife& gol, int compIdx, bool& done)
     {
         static Semaphore stateChangeMutex(1);
-
         sixteenSemaphore.wait(); // wait for the simulation thread to notify the start
        
         while (!done)
@@ -57,18 +57,18 @@ namespace {
         auto vecThread = std::vector<std::thread>();
         for (int i = 0; i < 16; i++)
         {
-            vecThread.emplace_back(barrierSixteen, std::ref(gol), i, done);
+            vecThread.emplace_back(barrierSixteen, std::ref(gol), i, std::ref(done));
         }
-        while (!done)
+        do
         {
             simSemaphore.wait();
 
             // notify the 16 threads to start
             for (auto i = 0; i < 16; i++)
                 sixteenSemaphore.notify();
-        }
+        } while (!done);
 
-        for (int i = 0; i < sixteenSemaphore.GetCount(); i++)
+        for (int i = 0; i < 16; i++)
             sixteenSemaphore.notify();
         for (auto& vec : vecThread)
         {
@@ -139,9 +139,10 @@ int main(int, char**)
     auto runSimulation = false;
     auto doNextIteration = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    auto rectSize = ImVec2{ 5., 5. };
 
 
-    auto boardSize = 200;
+    auto boardSize = 20;
     auto gol = GameOfLife(boardSize);
     gol.InitBoardWithRandomData(5);
     //gol.SetInitialState({
@@ -174,11 +175,14 @@ int main(int, char**)
         while (SDL_PollEvent(&event))
         {
             ImGui_ImplSDL2_ProcessEvent(&event);
-            if (event.type == SDL_QUIT)
+            if (event.type == SDL_QUIT ||
+                event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
+            {
                 done = true;
-            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
-                done = true;
+            }
         }
+        if (done)
+            break;
 
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -225,8 +229,17 @@ int main(int, char**)
             static int refreshRate = 2;
             ImGui::PushItemWidth(100);
             ImGui::InputInt("Refreshes per second", &refreshRate);
+            if (ImGui::Button("+"))
+            {
+                rectSize.x += 2.;
+                rectSize.y += 2.;
+            }
+            if (ImGui::Button("-"))
+            {
+                rectSize.x -= 2.;
+                rectSize.y -= 2.;
+            }
             ImGui::PopItemWidth();
-            ImGui::Text("semaphore count %d", simSemaphore.GetCount());
 
             if (!runSimulation)
             {
@@ -249,10 +262,11 @@ int main(int, char**)
                     simSemaphore.notify();
                 }
             }
+            ImGui::Text("semaphore count %d", simSemaphore.GetCount());
+            ImGui::Text("Sixteen count %d", sixteenSemaphore.GetCount());
 
             ImGui::NewLine();
             ImVec2 startPosition = ImGui::GetCursorScreenPos();      // this is the position at which the next ImGui object will be drawn, ImDrawList API uses screen coordinates!
-            auto rectSize = ImVec2{ 5., 5. };
 
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             auto colorToDraw = green;
@@ -279,6 +293,7 @@ int main(int, char**)
         SDL_GL_SwapWindow(window);
     }
 
+    simSemaphore.notify(); // we have to notify the sim thread to let it continue the last iteration
     simThread.join();
 
     // Cleanup
