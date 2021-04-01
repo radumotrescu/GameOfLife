@@ -142,7 +142,7 @@ int main(int, char**)
     auto rectSize = ImVec2{ 5., 5. };
 
 
-    auto boardSize = 20;
+    auto boardSize = 200;
     auto gol = GameOfLife(boardSize);
     gol.InitBoardWithRandomData(5);
     //gol.SetInitialState({
